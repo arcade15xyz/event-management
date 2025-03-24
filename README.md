@@ -1,20 +1,23 @@
-# EVENT MANAGEMENT PROJECT  
+# EVENT MANAGEMENT PROJECT
 
+## Introduction
 
+A project for Event Management .
 
-## Introduction   
-A project for Event Management .   
+## Starting
 
+1. To start the project ⤵️
 
-## Starting   
-1. To start the project ⤵️   
 ```
 composer create-project --prefer-dist laravel/laravel event-management
 ```
+
 1. Now make the model ⤵️
+
 ```
 php artisan make:model Event -m
 ```
+
 ```php
 
 <?php
@@ -36,10 +39,12 @@ class Attendee extends Model
         return $this->belongsTo(Event::class);
     }
 }
-```   
+```
+
 ```
 php artisan make:model Attendee -m
-```  
+```
+
 ```php
 <?php
 
@@ -63,22 +68,31 @@ class Event extends Model
 }
 
 ```
+
 This makes a model with a migration
-1. In .env file enable the database.   
-1. Now let's migrate these models ⤵️   
+
+1. In .env file enable the database.
+1. Now let's migrate these models ⤵️
+
 ```
 php artisan migrate
 ```
+
 1. Now let's make controller now ⤵️
+
 ```
 php artisan make:controller Api/AttendeeController
  --api
-```   
-And   
+```
+
+And
+
 ```php artisan make:controller Api/EventController
  --api
 ```
+
 1. We can make a Provider namely **RouteServiceProvider** if needed though all the features can be done in **AppServiceProvider**.
+
 ```php
     public function boot(): void
     {
@@ -87,7 +101,9 @@ And
         });
     }
 ```
-1. In **routes/api.php** ⤵️   
+
+1. In **routes/api.php** ⤵️
+
 ```php
 <?php
 
@@ -108,13 +124,14 @@ Route::apiResource('event.attendees', AttendeeController::class)
 
 So the API creates API Controller Optimized for JSON response. i.e. the data is in JSON format.
 
-
 ## Seeding Data for the REST API
 
-So now we are seeding data for the dummy entries in the tables. for that we make the **factories** (*database>factories*) there we are only have 2 factories **UserFactory.php** and **EventFactory.php** there is no need to make a factory for **Attendee** because it only has columns related to **User** and **Event** not any column of its own. Creating a Factory   
+So now we are seeding data for the dummy entries in the tables. for that we make the **factories** (_database>factories_) there we are only have 2 factories **UserFactory.php** and **EventFactory.php** there is no need to make a factory for **Attendee** because it only has columns related to **User** and **Event** not any column of its own. Creating a Factory
+
 ```
 php artisan make:factory EventFactory --model=Event
 ```
+
 ```php
 <?php
 
@@ -143,15 +160,20 @@ class EventFactory extends Factory
     }
 }
 ```
-now lets make ***Seeders*** for the **Event** and **Attendee**
+
+now lets make **_Seeders_** for the **Event** and **Attendee**
+
 ```
 php artisan make:seeder EventSeeder
 ```
+
 ```
 php artisan make:seeder AttendeeSeeder
 ```
-Now in Seeders   
+
+Now in Seeders  
 EventSeeder
+
 ```php
 <?php
 
@@ -180,7 +202,9 @@ class EventSeeder extends Seeder
 }
 
 ```
-And in AttendeeSeeder   
+
+And in AttendeeSeeder
+
 ```php
 <?php
 
@@ -212,7 +236,9 @@ class AttendeeSeeder extends Seeder
 }
 
 ```
+
 And in the DatabaseSeeder
+
 ```php
 <?php
 
@@ -237,16 +263,19 @@ class DatabaseSeeder extends Seeder
 }
 
 ```
-As databaseSeeder is from were seed will work.   
-    
+
+As databaseSeeder is from were seed will work.
+
 And then finally
+
 ```
 php artisan migrate:refresh --seed
 ```
 
-
 ## Storing Data and Validation
-now we are storing data for that we need to define *fillable* in model and then in **EventController** in **store** 
+
+now we are storing data for that we need to define _fillable_ in model and then in **EventController** in **store**
+
 ```php
     public function store(Request $request)
     {
@@ -266,4 +295,37 @@ now we are storing data for that we need to define *fillable* in model and then 
     }
 
 ```
-the `'user_id' => 1` indicates the value of foreign key *user_id*.   
+
+the `'user_id' => 1` indicates the value of foreign key _user_id_.
+
+## Updating and Deleting data
+
+In the **EventController** in **update** and **delete** are used for updating and deleting the events .  
+For _Updating_
+
+```php
+    public function update(Request $request, Event $event)
+    {
+        $event->update(
+            $request->validate([
+                'name' => 'sometimes|string|max:255',
+                'description' => 'nullable|string',
+                'start_time' => 'sometimes|date',
+                'end_time' => 'sometimes|date|after:start_time'
+            ])
+        );
+        return $event;
+    }
+```
+
+For _deleting_
+
+```php
+    public function destroy(Event $event)
+    {
+        $event->delete();
+        return response()->json([
+            'message' => 'Event deleted successfully'
+        ]);
+    }
+```
