@@ -245,3 +245,25 @@ php artisan migrate:refresh --seed
 ```
 
 
+## Storing Data and Validation
+now we are storing data for that we need to define *fillable* in model and then in **EventController** in **store** 
+```php
+    public function store(Request $request)
+    {
+
+
+        $event = Event::create([
+            ...$request->validate([
+                'name' => 'required|string|max:255',
+                'description' => 'nullable|string',
+                'start_time' => 'required|date',
+                'end_time' => 'required|date|after:start_time',
+            ]),
+            'user_id' => 1
+
+        ]);
+        return $event;
+    }
+
+```
+the `'user_id' => 1` indicates the value of foreign key *user_id*.   
