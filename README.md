@@ -329,3 +329,51 @@ For _deleting_
         ]);
     }
 ```
+
+## API Resources - Controlling JSON Response
+
+API Resources are used to transform models and collections
+into well-Structured JSON responses. They allows us to controll exactly how the JSON data looks, making it ideal for building clean, consistent API's.
+
+### How to create a API Resources
+
+```
+php artisan make:resource EventResource
+```
+
+Generates a file in `App\Http\Resources\EventResource.php`
+
+```php
+<?php
+
+namespace App\Http\Resources;
+
+use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
+
+class EventResource extends JsonResource
+{
+    /**
+     * Transform the resource into an array.
+     *
+     * @return array<string, mixed>
+     */
+    public function toArray(Request $request): array
+    {
+        return [
+            'id' => $this->id,
+            'name'=> $this->name,
+            'description' => $this->description,
+            'start_time' => $this->start_time,
+            'end_time' => $this->end_time,
+            'user' => new UserResource($this->whenLoaded('user')),
+            'attendees' => AttendeeResource::collection($this->whenLoaded('attendees')),
+        ];
+    }
+}
+```
+
+we make API Resource for **User**(UserResource) and **Attendee**(AttendeeResources) . Then we use them in controller. 
+Check the **EventController.php**   
+
+[More details on API Resources](https://laravel.com/docs/12.x/eloquent-resources)
