@@ -377,3 +377,17 @@ we make API Resource for **User**(UserResource) and **Attendee**(AttendeeResourc
 Check the **EventController.php**   
 
 [More details on API Resources](https://laravel.com/docs/12.x/eloquent-resources)
+
+
+## Attendees and Pagination   
+Here we worked for routing for Attendee. The Route for attendee can be like following ⤵️   
+```php
+Route::apiResource('events.attendees', AttendeeController::class)
+    ->scoped()->except(['update']);
+```
+The scope is automatically declared by the laravel so no need to do it manually.   
+   
+Now, Check the **AttendeeController.php** 
+
+
+

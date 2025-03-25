@@ -15,7 +15,7 @@ class Event extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function attendee()
+    public function attendees()
     {
         return $this->hasMany(Attendee::class);
     }
