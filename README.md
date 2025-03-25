@@ -388,6 +388,64 @@ Route::apiResource('events.attendees', AttendeeController::class)
 The scope is automatically declared by the laravel so no need to do it manually.   
    
 Now, Check the **AttendeeController.php** 
+   
 
 
+## Optional Relation Loading 
+We optionally load the relations according to us for any action i.e. ⬇️   
+```
+Localhost/events?include=user,attendees,attendees.user
+```
+*This is a URL*   
+Here, *include* helps us define relations to be loaded .   
+❓Why is there *attendees* and *attendees.user* both?   
+➡️ We have to define relations for its data to be loaded and we need to add both *attendees* as well as *attendees.user* if we want to bind thier data.  
+### The code in EventController.php
+```php
+ public function index()
+    {
+        $query = Event::query();
+        $relations = ['user', 'attendees', 'attendees.user'];
+        foreach($relations as $relation){
 
+            $query->when(
+                $this->shouldIncludeRelation($relation),
+                fn($q)=> $q->with($relation)
+            );
+
+        }
+
+        return EventResource::collection($query->latest()->paginate());
+    }
+
+    protected function shouldIncludeRelation(string $relation){
+
+        $include = request()->query('include');
+
+        if(!$include){
+            return false;
+        }
+
+        $relations = array_map('trim',explode(',', $include));
+
+        return in_array($relation, $relations);
+    }
+
+```
+ 
+**Another Important thing here is for these relation to work we need to define these data in EventResources**
+```php
+    public function toArray(Request $request): array
+    {
+        return [
+            'id' => $this->id,
+            'name' => $this->name,
+            'description' => $this->description,
+            'start_time' => $this->start_time,
+            'end_time' => $this->end_time,
+            'user' => new UserResource($this->whenLoaded('user')),
+            'attendees' => AttendeeResource::collection($this->whenLoaded('attendees')),
+        ];
+    }
+```
+so *whenLoaded* is doing, is that if the relation is loaded only then the data is returned else it is not returned.
