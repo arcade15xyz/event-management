@@ -373,34 +373,39 @@ class EventResource extends JsonResource
 }
 ```
 
-we make API Resource for **User**(UserResource) and **Attendee**(AttendeeResources) . Then we use them in controller. 
-Check the **EventController.php**   
+we make API Resource for **User**(UserResource) and **Attendee**(AttendeeResources) . Then we use them in controller.
+Check the **EventController.php**
 
 [More details on API Resources](https://laravel.com/docs/12.x/eloquent-resources)
 
+## Attendees and Pagination
 
-## Attendees and Pagination   
-Here we worked for routing for Attendee. The Route for attendee can be like following ⤵️   
+Here we worked for routing for Attendee. The Route for attendee can be like following ⤵️
+
 ```php
 Route::apiResource('events.attendees', AttendeeController::class)
     ->scoped()->except(['update']);
 ```
-The scope is automatically declared by the laravel so no need to do it manually.   
-   
-Now, Check the **AttendeeController.php** 
-   
 
+The scope is automatically declared by the laravel so no need to do it manually.
 
-## Optional Relation Loading 
-We optionally load the relations according to us for any action i.e. ⬇️   
+Now, Check the **AttendeeController.php**
+
+## Optional Relation Loading
+
+We optionally load the relations according to us for any action i.e. ⬇️
+
 ```
 Localhost/events?include=user,attendees,attendees.user
 ```
-*This is a URL*   
-Here, *include* helps us define relations to be loaded .   
-❓Why is there *attendees* and *attendees.user* both?   
-➡️ We have to define relations for its data to be loaded and we need to add both *attendees* as well as *attendees.user* if we want to bind thier data.  
+
+_This is a URL_  
+Here, _include_ helps us define relations to be loaded .  
+❓Why is there _attendees_ and _attendees.user_ both?  
+➡️ We have to define relations for its data to be loaded and we need to add both _attendees_ as well as _attendees.user_ if we want to bind thier data.
+
 ### The code in EventController.php
+
 ```php
  public function index()
     {
@@ -432,8 +437,9 @@ Here, *include* helps us define relations to be loaded .
     }
 
 ```
- 
+
 **Another Important thing here is for these relation to work we need to define these data in EventResources**
+
 ```php
     public function toArray(Request $request): array
     {
@@ -448,4 +454,53 @@ Here, *include* helps us define relations to be loaded .
         ];
     }
 ```
-so *whenLoaded* is doing, is that if the relation is loaded only then the data is returned else it is not returned.
+
+so _whenLoaded_ is doing, is that if the relation is loaded only then the data is returned else it is not returned.
+
+## Universal Relation Loading Trait
+
+Used for reusability of code. i.e. The code for _Optional Relation Loading_. So to enable the reusability we need to build **traits** (app/HTTP/Traits/CanLoadRelationships.php) this folder needed to made manually. 
+```php
+<?php
+
+namespace App\Http\Traits;
+
+use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
+use Illuminate\Database\Query\Builder as QueryBuilder;
+use Illuminate\Database\Eloquent\Model;
+
+trait CanLoadRelationships
+{
+    public function loadRelationships(
+        Model|QueryBuilder|EloquentBuilder $for, ?array $relations = null
+    ) : Model|QueryBuilder|EloquentBuilder {
+        $relations = $relations?? $this->relations?? [];
+        foreach($relations as $relation){
+
+            $for->when(
+                $this->shouldIncludeRelation($relation),
+                fn($q)=>
+                $for instanceof Model ? $for->load($relation): $q->with($relation)
+            );
+
+        }
+        return $for;
+    }
+
+    protected function shouldIncludeRelation(string $relation){
+
+        $include = request()->query('include');
+
+        if(!$include){
+            return false;
+        }
+
+        $relations = array_map('trim',explode(',', $include));
+
+        return in_array($relation, $relations);
+    }
+}
+```
+Above is the code used in trait **CanLoadRelationships** check this in code too.   
+Now to use **CanLoadRelations** we use `use CanLoadRelationships` in **EventController** and then use these in the 
+
