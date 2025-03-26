@@ -459,7 +459,8 @@ so _whenLoaded_ is doing, is that if the relation is loaded only then the data i
 
 ## Universal Relation Loading Trait
 
-Used for reusability of code. i.e. The code for _Optional Relation Loading_. So to enable the reusability we need to build **traits** (app/HTTP/Traits/CanLoadRelationships.php) this folder needed to made manually. 
+Used for reusability of code. i.e. The code for _Optional Relation Loading_. So to enable the reusability we need to build **traits** (app/HTTP/Traits/CanLoadRelationships.php) this folder needed to made manually.
+
 ```php
 <?php
 
@@ -501,6 +502,22 @@ trait CanLoadRelationships
     }
 }
 ```
-Above is the code used in trait **CanLoadRelationships** check this in code too.   
-Now to use **CanLoadRelations** we use `use CanLoadRelationships` in **EventController** and then use these in the 
 
+Above is the code used in trait **CanLoadRelationships** check this in code too.  
+Now to use **CanLoadRelations** we use `use CanLoadRelationships` in **EventController** and then use these in the controller. See **EventController** and the actions.
+
+## Loading Attendee Relations
+
+now here what we are doing is we are using **CanLoadRelations** in **AttendeeController** so now what is happening here is same as before but the parameter can be _HasMany_ too as `attendee()` also has the type of _HasMany_ (check in **Event model**);  
+**_Check the AttendeeController_**
+
+**_Summary of When Each Type is Passed_**
+
+| Type            | When It's Sent                            | Eager Loading Method          |
+| --------------- | ----------------------------------------- | ----------------------------- |
+| Model           | Single event or record.                   | $for->load($relation)         |
+| QueryBuilder    | Raw DB query (not common for relations).  | Eager loading not applicable. |
+| EloquentBuilder | Query before calling get() or paginate(). | $q->with($relation)           |
+| HasMany         | When working with a related collection.   | $q->with($relation)           |
+
+**_Check this all_**
