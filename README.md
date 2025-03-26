@@ -521,3 +521,60 @@ now here what we are doing is we are using **CanLoadRelations** in **AttendeeCon
 | HasMany         | When working with a related collection.   | $q->with($relation)           |
 
 **_Check this all_**
+
+## Setting Up Authentication Using Sanctum
+
+So now we are working on Authentication
+
+1. Add `HasApiTokens` trait in **User.php** (model) .
+1. Now make another controller **AuthController** in (app/Http/Controllers/Api/AuthController.php).  
+   Now Add following code in **AuthController**
+
+```php
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
+
+class AuthController extends Controller
+{
+    public function login(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required'
+        ]);
+        $user = User::where('email', $request->email)->first();
+        if (!$user) {
+            throw ValidationException::withMessages([
+                'email' => ['The provided credentials are incorrect.']
+            ]);
+        }
+
+        if (!Hash::check($request->password, $user->password)) {
+            throw ValidationException::withMessages([
+                'email' => ['The provided credentials are incorrect.']
+            ]);
+        }
+        $token = $user->createToken('api-token')->plainTextToken;
+        return response()->json([
+            'token' => $token
+        ]);
+    }
+}
+
+```
+
+Now add a route for login
+
+```php
+Route::post('/login', [AuthController::class, 'login']);
+```
+
+Now we can see how the tokens are sent in **Postman**.  
+[**_Click here to check Postman_**](https://www.postman.com/martian-star-647792/events-management/request/9r6r5qe/login)
