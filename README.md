@@ -578,3 +578,42 @@ Route::post('/login', [AuthController::class, 'login']);
 
 Now we can see how the tokens are sent in **Postman**.  
 [**_Click here to check Postman_**](https://www.postman.com/martian-star-647792/events-management/request/9r6r5qe/login)
+
+## Protecting Routes
+
+So now we are protecting the Routes (to run the routes only if the _user_ is authenticated) using Sanctum. here is how we do it in this project.
+
+```php
+Route::middleware('auth:sanctum')->group(function (){
+    Route::apiResource('events', EventController::class)->except(['index','show']);
+});
+```
+
+so now **tokens** will be checked for Validation. All other(except index and show here) actions require a valid token for EventController. This _auth_ can also be run on the EventController **\_\_construct** using like this
+
+```php
+public function __contruct(){
+    $this->middleware('auth:sanctum')->except(['index','show']);
+}
+```
+
+## Revoking Tokens and Signing Out
+
+Now we are signing out the tokens.
+
+```php
+    public function logout(Request $request) {
+        $request->user()->tokens()->delete();
+
+        return response()->json([
+            "message" => "Logged out successfully"
+        ]);
+
+    }
+```
+
+What happens here is the all the tokens are revoked for a specific user.
+
+[Go through **Revoking Tokens**](https://laravel.com/docs/12.x/sanctum#revoking-tokens)
+
+[Go through **Token Expiration**](https://laravel.com/docs/12.x/sanctum#token-expiration)

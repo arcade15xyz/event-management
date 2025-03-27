@@ -12,7 +12,13 @@ Route::get('/user', function (Request $request) {
 
 Route::post('/login',[AuthController::class,'login']);
 
+Route::post('/logout',[AuthController::class, 'logout'])->middleware('auth:sanctum');
+
 Route::apiResource('events', EventController::class);
 
 Route::apiResource('events.attendees', AttendeeController::class)
     ->scoped()->except(['update']);
+
+Route::middleware('auth:sanctum')->group(function (){
+    Route::apiResource('events', EventController::class)->except(['index','show']);
+});
