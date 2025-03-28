@@ -7,12 +7,14 @@ use App\Http\Resources\AttendeeResource;
 use App\Http\Traits\CanLoadRelationships;
 use App\Models\Attendee;
 use App\Models\Event;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
 
 class AttendeeController extends Controller
 {
+    use AuthorizesRequests;
     use CanLoadRelationships;
     private array $relations = ['user'];
     /**
@@ -20,6 +22,7 @@ class AttendeeController extends Controller
      */
     public function index(Event $event)
     {
+
         $attendees = $this->loadRelationships($event->attendees()->latest());
 
         return AttendeeResource::collection(
@@ -61,9 +64,7 @@ class AttendeeController extends Controller
      */
     public function destroy(Event $event, Attendee $attendee)
     {
-        if (Gate::denies('delete-attendee', [$event, $attendee])) {
-            abort(403, 'You are not authorized to delete this event');
-        }
+        Gate::authorize('delete', $attendee);
 
         $attendee->delete();
 

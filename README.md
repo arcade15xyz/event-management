@@ -688,3 +688,233 @@ it means if **'update-event'** **Gate** is denied as token isn't authorized then
 
 We provide a middleware for the Routes. **_So now the authorization is done via tokens_**.
 [To know more about **Authorization with Gates**](https://laravel.com/docs/12.x/authorization#gates)
+
+## Authorization with Policies
+
+🚀. **_How to make a Policy for a model_**
+```php artisan make:policy EventPolicy --model=Event````
+
+now we have made policy next thing to do is simply difine the rules of policies in the **EventPolicy.php**
+
+```php
+<?php
+
+namespace App\Policies;
+
+use App\Models\Event;
+use App\Models\User;
+use Illuminate\Auth\Access\Response;
+
+class EventPolicy
+{
+    /**
+     * Determine whether the user can view any models.
+     */
+    public function viewAny(?User $user): bool
+    {
+        return true;
+    }
+
+    /**
+     * Determine whether the user can view the model.
+     */
+    public function view(?User $user, Event $event): bool
+    {
+        return true;
+    }
+
+    /**
+     * Determine whether the user can create models.
+     */
+    public function create(User $user): bool
+    {
+        return true;
+    }
+
+    /**
+     * Determine whether the user can update the model.
+     */
+    public function update(User $user, Event $event): bool
+    {
+        return $user->id === $event->user_id;
+    }
+
+    /**
+     * Determine whether the user can delete the model.
+     */
+    public function delete(User $user, Event $event): bool
+    {
+        return $user->id === $event->user_id;
+    }
+
+    /**
+     * Determine whether the user can restore the model.
+     */
+    public function restore(User $user, Event $event): bool
+    {
+        return false;
+    }
+
+    /**
+     * Determine whether the user can permanently delete the model.
+     */
+    public function forceDelete(User $user, Event $event): bool
+    {
+        return false;
+    }
+}
+
+```
+
+So, let's see why we use `?` in `viewAny(?User $user)` function, this `?` is if there is `User` or not the `viewAny()` will work.
+
+Now to declare that the authorization works in a action
+
+```php
+Gate::authorize('viewAny', Event::class);
+//OR
+if(Gate::denies('viewAny')){
+    abort(403,"You are not authorized so do it mmaann");
+}
+//OR
+if ($request->user()->cannot('update', $post)) {
+    abort(403);
+}
+//OR
+if($request->user()->can('update',$post)){
+    ...
+}
+```
+File
+```php
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Http\Resources\EventResource;
+use App\Http\Traits\CanLoadRelationships;
+use App\Models\Event;
+use App\Models\User;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
+
+class EventController extends Controller
+{
+    use AuthorizesRequests;
+    use CanLoadRelationships;
+
+    public function __construct(){
+
+
+    }
+
+    private array $relations = ['user', 'attendees', 'attendees.user'];
+
+
+    /**
+     * Display a listing of the resource.
+     */
+    public function index()
+    {
+        //used when custom message and status needs to be sent
+        // if(Gate::denies('viewAny')){
+        //     abort(403,"You are not authorized so do it mmaann");
+        // }
+        //OR
+        Gate::authorize('viewAny', Event::class);
+
+        $query = $this->loadRelationships(Event::query());
+        // $query = Event::query();
+        // foreach($relations as $relation){
+
+        //     $query->when(
+        //         $this->shouldIncludeRelation($relation),
+        //         fn($q)=> $q->with($relation)
+        //     );
+
+        // }
+
+        return EventResource::collection($query->latest()->paginate());
+    }
+
+    // protected function shouldIncludeRelation(string $relation)
+    // {
+
+    //     $include = request()->query('include');
+
+    //     if (!$include) {
+    //         return false;
+    //     }
+
+    //     $relations = array_map('trim', explode(',', $include));
+
+    //     return in_array($relation, $relations);
+    // }
+
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(Request $request)
+    {
+
+
+        $event = Event::create([
+            ...$request->validate([
+                'name' => 'required|string|max:255',
+                'description' => 'nullable|string',
+                'start_time' => 'required|date',
+                'end_time' => 'required|date|after:start_time',
+            ]),
+            'user_id' => $request->user()->id
+
+        ]);
+        return new EventResource($this->loadRelationships($event));
+    }
+
+    /**
+     * Display the specified resource.
+     */
+    public function show(Event $event)
+    {
+
+        return new EventResource($this->loadRelationships($event));
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, Event $event)
+    {
+        if (Gate::denies('update', $event)) {
+            abort(403, 'You are not authorized to update this event.');
+        }
+
+        $event->update(
+            $request->validate([
+                'name' => 'sometimes|string|max:255',
+                'description' => 'nullable|string',
+                'start_time' => 'sometimes|date',
+                'end_time' => 'sometimes|date|after:start_time'
+            ])
+        );
+        return new EventResource($this->loadRelationships($event));
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(Event $event)
+    {
+
+        $event->delete();
+        return response()->json([
+            'message' => 'Event deleted successfully'
+        ]);
+    }
+}
+
+```
+
+[kindly go through this docs to properly understand and all below it](https://laravel.com/docs/12.x/authorization#creating-policies)

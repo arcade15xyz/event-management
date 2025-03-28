@@ -7,13 +7,19 @@ use App\Http\Resources\EventResource;
 use App\Http\Traits\CanLoadRelationships;
 use App\Models\Event;
 use App\Models\User;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
 class EventController extends Controller
 {
-
+    use AuthorizesRequests;
     use CanLoadRelationships;
+
+    public function __construct(){
+
+
+    }
 
     private array $relations = ['user', 'attendees', 'attendees.user'];
 
@@ -23,6 +29,12 @@ class EventController extends Controller
      */
     public function index()
     {
+        //used when custom message and status needs to be sent
+        // if(Gate::denies('viewAny')){
+        //     abort(403,"You are not authorized so do it mmaann");
+        // }
+        //OR
+        Gate::authorize('viewAny', Event::class);
 
         $query = $this->loadRelationships(Event::query());
         // $query = Event::query();
@@ -86,10 +98,10 @@ class EventController extends Controller
      */
     public function update(Request $request, Event $event)
     {
-        if(Gate::denies('update-event', $event)){
-            abort(403,'You are not authorized to update this event.');
+        if (Gate::denies('update', $event)) {
+            abort(403, 'You are not authorized to update this event.');
         }
-        
+
         $event->update(
             $request->validate([
                 'name' => 'sometimes|string|max:255',
@@ -106,6 +118,7 @@ class EventController extends Controller
      */
     public function destroy(Event $event)
     {
+
         $event->delete();
         return response()->json([
             'message' => 'Event deleted successfully'

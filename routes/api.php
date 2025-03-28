@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AttendeeController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\EventController;
+use App\Models\Event;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -20,8 +21,9 @@ Route::apiResource('events.attendees', AttendeeController::class)
     ->scoped()->except(['update']);
 
 Route::middleware('auth:sanctum')->group(function (){
+
     Route::apiResource('events', EventController::class)->except(['index','show']);
-    
+
     Route::apiResource('events.attendees', AttendeeController::class)->scoped()->except(['index','show']);
 
 
