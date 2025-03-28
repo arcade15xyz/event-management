@@ -8,6 +8,8 @@ use App\Http\Traits\CanLoadRelationships;
 use App\Models\Attendee;
 use App\Models\Event;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 
 class AttendeeController extends Controller
 {
@@ -28,7 +30,7 @@ class AttendeeController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request,Event $event)
+    public function store(Request $request, Event $event)
     {
         $attendee = $this->loadRelationships($event->attendees()->create([
             'user_id' => 1
@@ -41,9 +43,9 @@ class AttendeeController extends Controller
      */
     public function show(Event $event, Attendee $attendee)
     {
-       return new AttendeeResource(
-        $this->loadRelationships($attendee)
-       );
+        return new AttendeeResource(
+            $this->loadRelationships($attendee)
+        );
     }
 
     /**
@@ -57,10 +59,16 @@ class AttendeeController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $event , Attendee $attendee)
+    public function destroy(Event $event, Attendee $attendee)
     {
+        if (Gate::denies('delete-attendee', [$event, $attendee])) {
+            abort(403, 'You are not authorized to delete this event');
+        }
+
         $attendee->delete();
 
-        return response(status: 204);
+        return response()->json([
+            'message' => 'Attendee deleted successfully'
+        ], 204);
     }
 }

@@ -617,3 +617,74 @@ What happens here is the all the tokens are revoked for a specific user.
 [Go through **Revoking Tokens**](https://laravel.com/docs/12.x/sanctum#revoking-tokens)
 
 [Go through **Token Expiration**](https://laravel.com/docs/12.x/sanctum#token-expiration)
+
+## Authorization with Gate
+
+🚀. First in _app/Providers/AppServiceProvider.php_ add the following code in **public function boot()** (the code is for defining the **Gate**)
+
+```php
+      // Authentication using Gates
+        Gate::define('update-event', function ($user, Event $event) {
+            return $user->id === $event->user_id;
+        });
+
+        Gate::define('delete-attendee', function ($user, Event $event, Attendee $attendee) {
+            return $user->id === $attendee->user_id || $user->id === $event->user_id;
+        });
+```
+
+The code is defining the authentication for **update-event** and **delete-attendee**.
+
+🚀. Now we need to add these gate in the controller actions to do this we need to add the **middleware auth:sanctum** in the routes for those actions. So therefore in _Routes/api.php_
+
+```php
+Route::middleware('auth:sanctum')->group(function (){
+    Route::apiResource('events', EventController::class)->except(['index','show']);
+
+    Route::apiResource('events.attendees', AttendeeController::class)->scoped()->except(['index','show']);
+});
+```
+
+🚀. Then finally in the **Controllers** _EventController_
+
+```php
+
+    public function update(Request $request, Event $event)
+    {
+        if(Gate::denies('update-event', $event)){
+            abort(403,'You are not authorized to update this event.');
+        }
+
+        $event->update(
+            $request->validate([
+                'name' => 'sometimes|string|max:255',
+                'description' => 'nullable|string',
+                'start_time' => 'sometimes|date',
+                'end_time' => 'sometimes|date|after:start_time'
+            ])
+        );
+        return new EventResource($this->loadRelationships($event));
+    }
+```
+
+Similarly in _AttendeeController_
+
+```php
+    public function destroy(Event $event, Attendee $attendee)
+    {
+        if (Gate::denies('delete-attendee', [$event, $attendee])) {
+            abort(403, 'You are not authorized to delete this event');
+        }
+
+        $attendee->delete();
+
+        return response()->json([
+            'message' => 'Attendee deleted successfully'
+        ], 204);
+    }
+```
+
+it means if **'update-event'** **Gate** is denied as token isn't authorized then abort the action with the status 403 and message 'You are not authorized to update this event'.
+
+We provide a middleware for the Routes. **_So now the authorization is done via tokens_**.
+[To know more about **Authorization with Gates**](https://laravel.com/docs/12.x/authorization#gates)
