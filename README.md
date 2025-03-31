@@ -1022,3 +1022,136 @@ php artisan schedule:list
 
 **_Kindly go through `routes/console.php`_**.  
 [**_To know more about Task Scheduling_**](https://laravel.com/docs/12.x/scheduling#introduction)
+
+## Notification and Email Sending
+
+🚀. **How to build a Notifications**
+
+```
+php artisan make:notification EventReminderNotification
+```
+
+This is built in `app/Notifications/EventReminderNotification.php`.
+
+🚀. Following is the file for it
+
+```php
+<?php
+
+namespace App\Notifications;
+
+use App\Models\Event;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Notifications\Messages\MailMessage;
+use Illuminate\Notifications\Notification;
+
+class EventReminderNotification extends Notification
+{
+    use Queueable;
+
+    /**
+     * Create a new notification instance.
+     */
+    public function __construct(
+        public Event $event
+    )
+    {
+
+    }
+
+    /**
+     * Get the notification's delivery channels.
+     *
+     * @return array<int, string>
+     */
+    public function via(object $notifiable): array
+    {
+        return ['mail'];
+    }
+
+    /**
+     * Get the mail representation of the notification.
+     */
+    public function toMail(object $notifiable): MailMessage
+    {
+        return (new MailMessage)
+            ->line('Reminder: You have an upcoming event!')
+            ->action('View Event', route('events.show', $this->event->id))
+            ->line(
+                "The event {$this->event->name} starts at {$this->event->start_time}"
+            );
+    }
+
+    /**
+     * Get the array representation of the notification.
+     *
+     * @return array<string, mixed>
+     */
+    public function toArray(object $notifiable): array
+    {
+        return [
+            "event_id" => $this->event->id,
+            "event_name" => $this->event->name,
+            "event_start_time" => $this->event->start_time
+        ];
+    }
+}
+```
+
+And finally in the _SendEventReminder.php_ . See this in commit.
+
+```php
+<?php
+
+namespace App\Console\Commands;
+
+use App\Models\Event;
+use App\Notifications\EventReminderNotification;
+use Illuminate\Support\Str;
+use Illuminate\Console\Command;
+
+
+class SendEventReminders extends Command
+{
+    /**
+     * The name and signature of the console command.
+     *
+     * @var string
+     */
+    protected $signature = 'app:send-event-reminders';
+
+    /**
+     * The console command description.
+     *
+     * @var string
+     */
+    protected $description = 'Sends notifications to all event attendees that event starts soon.';
+
+    /**
+     * Execute the console command.
+     */
+    public function handle()
+    {
+        $event = Event::with('attendees.user')
+            ->whereBetween('start_time', [now(), now()->addDay()])->get();
+
+            $eventCount = $event->count();
+
+        $eventLabel = Str::plural('event', $eventCount);
+
+        $this->info("Found {$eventCount} {$eventLabel}.");
+
+        $event->each(
+            fn($event)=> $event->attendees->each(
+                fn($attendee)=>$attendee->user->notify(new EventReminderNotification(
+                    $event
+                ))));
+
+        $this->info('Reminder notifications send successfully!');
+    }
+}
+
+```
+
+[Click to know more](https://laravel.com/docs/12.x/notifications#sending-notifications)
