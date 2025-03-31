@@ -785,7 +785,9 @@ if($request->user()->can('update',$post)){
     ...
 }
 ```
+
 File
+
 ```php
 <?php
 
@@ -918,3 +920,70 @@ class EventController extends Controller
 ```
 
 [kindly go through this docs to properly understand and all below it](https://laravel.com/docs/12.x/authorization#creating-policies)
+
+## Custom Artisan Command - Reminding about Events
+
+🚀. **_Command_**
+`  php artisan make:command SendEventReminders
+ `
+This file is built in `app/Console/Command/SendEventReminder.php`  
+🚀. **_Code_**
+
+```php
+<?php
+
+namespace App\Console\Commands;
+
+use App\Models\Event;
+use Illuminate\Support\Str;
+use Illuminate\Console\Command;
+
+
+class SendEventReminders extends Command
+{
+    /**
+     * The name and signature of the console command.
+     *
+     * @var string
+     */
+    protected $signature = 'app:send-event-reminders';
+
+    /**
+     * The console command description.
+     *
+     * @var string
+     */
+    protected $description = 'Sends notifications to all event attendees that event starts soon.';
+
+    /**
+     * Execute the console command.
+     */
+    public function handle()
+    {
+        // $event = all the events with attendees and users of those attendees in a given time frame.
+        $event = Event::with('attendees.user')
+            ->whereBetween('start_time', [now(), now()->addDay()])->get();
+        // $eventCount count of event
+        $eventCount = $event->count();
+        // $eventLabel: Just a label.
+        $eventLabel = Str::plural('event', $eventCount);
+
+        $this->info("Found {$eventCount} {$eventLabel}.");
+        //running for each event's each attendeer run the $this->info command.
+        $event->each(
+            fn($event)=> $event->attendees->each(
+                fn($attendee)=>$this->info("Notifying the user {$attendee->user->id}")));
+
+        $this->info('Reminder notifications send successfully!');
+    }
+}
+```
+
+the function `handle()` basically does the main task of functionality see the code .  
+[To know more](https://laravel.com/docs/12.x/artisan#writing-commands)
+
+> gogo power Ranger
+>
+> > gogo Power Ranger
+> >
+> > >kindo
