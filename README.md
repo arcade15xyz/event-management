@@ -1232,3 +1232,37 @@ class EventReminderNotification extends Notification implements ShouldQueue
     }
 }
 ```
+
+## Throttling the API (Rate Limiting)
+
+For this throttle rate limiter to work we need add `'limiter' => 'redis'`  
+This is in file `config/cache.php`.
+
+```php
+'default' => env('CACHE_STORE', 'database'),
+
+'limiter' => 'redis',
+```
+
+throttle helps us in rate limiting.  
+example:
+
+```php
+
+Route::middleware(['auth:sanctum', 'throttle:60,1'])->group(function () {
+    Route::get('/events', [EventController::class, 'index']);
+});
+```
+
+What happens here is rate limit is decided to be 60 in 1 minute. And if we have a custom **Rate Limiter** then we can put its name (here its _'api'_):
+
+```php
+
+Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
+    Route::get('/events', [EventController::class, 'index']);
+});
+```
+
+Else the rate limiter is same
+
+[**Click and Read Importent** 🎯](https://laravel.com/docs/12.x/rate-limiting)
