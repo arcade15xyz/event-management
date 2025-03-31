@@ -924,8 +924,7 @@ class EventController extends Controller
 ## Custom Artisan Command - Reminding about Events
 
 🚀. **_Command_**
-`  php artisan make:command SendEventReminders
- `
+`php artisan make:command SendEventReminders`
 This file is built in `app/Console/Command/SendEventReminder.php`  
 🚀. **_Code_**
 
@@ -979,11 +978,47 @@ class SendEventReminders extends Command
 }
 ```
 
-the function `handle()` basically does the main task of functionality see the code .  
-[To know more](https://laravel.com/docs/12.x/artisan#writing-commands)
+The function `handle()` basically does the main task of functionality see the code .  
+[To know more **Click**](https://laravel.com/docs/12.x/artisan#writing-commands)
 
-> gogo power Ranger
->
-> > gogo Power Ranger
-> >
-> > >kindo
+## Task Scheduling - Reminding About Events
+
+🚀. **Task Scheduling** is the concept that Schedules and runs Commands in Server. Laravel's command scheduler offers a fresh approach to managing scheduled tasks on your server. The scheduler allows you to fluently and expressively define your command schedule within your Laravel application itself. When using the scheduler, only a single cron entry is needed on your server. Your task schedule is typically defined in your application's `routes/console.php` file.  
+this can also be done in `bootstrap/app.php`.
+
+🚀. _In `routes/console.php`_
+
+```php
+use App\Console\Commands\SendEmailsCommand;
+use Illuminate\Support\Facades\Schedule;
+
+Schedule::command('emails:send Taylor --force')->daily();
+
+Schedule::command(SendEmailsCommand::class, ['Taylor', '--force'])->daily()
+```
+
+🚀. _In `bootstrap/app.php`_
+
+```php
+use Illuminate\Console\Scheduling\Schedule;
+
+->withSchedule(function (Schedule $schedule) {
+    $schedule->call(new DeleteRecentUsers)->daily();
+})
+```
+
+🚀. To Initiate the task
+
+```
+php artisan schedule:work
+```
+
+Now the task will run according to **time interval**.  
+If you would like to view an overview of your scheduled tasks and the next time they are scheduled to run, you may use the schedule:list Artisan command:
+
+```
+php artisan schedule:list
+```
+
+**_Kindly go through `routes/console.php`_**.  
+[**_To know more about Task Scheduling_**](https://laravel.com/docs/12.x/scheduling#introduction)
