@@ -1155,3 +1155,80 @@ class SendEventReminders extends Command
 ```
 
 [Click to know more](https://laravel.com/docs/12.x/notifications#sending-notifications)
+
+## Queues - Reminding About Events
+
+Now **Queues** what these does is instead of scheduling the Task now it sent it to background to be done in such a way that it don't effect the smoothness of App. So all these _tasks_ can be seen in database table namely **jobs** and after these tasks are executed they are removed form the **jobs** table.  
+Now how to apply **Queues** ➡️
+
+```php
+    'default' => env('QUEUE_CONNECTION', 'sync'),
+```
+
+This change is done in `config/queue.php`.  
+And also a few changes in `app/Notifications/EventReminderNotification.php` ➡️
+
+```php
+<?php
+
+namespace App\Notifications;
+
+use App\Models\Event;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Notifications\Messages\MailMessage;
+use Illuminate\Notifications\Notification;
+
+//this implements ShouldQueue is implemented to make notifications queueable.
+class EventReminderNotification extends Notification implements ShouldQueue
+{
+    use Queueable;
+
+    /**
+     * Create a new notification instance.
+     */
+    public function __construct(
+        public Event $event
+    )
+    {
+
+    }
+
+    /**
+     * Get the notification's delivery channels.
+     *
+     * @return array<int, string>
+     */
+    public function via(object $notifiable): array
+    {
+        return ['mail'];
+    }
+
+    /**
+     * Get the mail representation of the notification.
+     */
+    public function toMail(object $notifiable): MailMessage
+    {
+        return (new MailMessage)
+            ->line('Reminder: You have an upcoming event!')
+            ->action('View Event', route('events.show', $this->event->id))
+            ->line(
+                "The event {$this->event->name} starts at {$this->event->start_time}"
+            );
+    }
+
+    /**
+     * Get the array representation of the notification.
+     *
+     * @return array<string, mixed>
+     */
+    public function toArray(object $notifiable): array
+    {
+        return [
+            "event_id" => $this->event->id,
+            "event_name" => $this->event->name,
+            "event_start_time" => $this->event->start_time
+        ];
+    }
+}
+```
